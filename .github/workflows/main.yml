@@ -1,0 +1,36 @@
+name: 自动同步原仓库更新
+on:
+  # 定时执行：每天凌晨2点（北京时间）同步一次
+  schedule:
+    - cron: '0 18 * * *'  # UTC时间，对应北京时间+8小时 → 18+8=2点
+  # 手动触发（可选，想更更新时自己点一下）
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 拉取你的Fork仓库代码
+      - name: 克隆仓库
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 拉取所有历史记录
+
+      # 2. 添加原仓库为上游仓库
+      - name: 设置上游仓库
+        run: |
+          git remote add upstream https://github.com/kuke31/xmlgz.git
+          git fetch upstream
+
+      # 3. 合并原仓库的更新到你的仓库
+      - name: 合并更新
+        run: |
+          git checkout main  # 注意：如果原仓库主分支是master，这里改master
+          git merge upstream/main --no-edit  # 同理，主分支名要对应
+
+      # 4. 推送更新到你的Fork仓库
+      - name: 推送更新
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main  # 你的仓库主分支名（main/master）
